@@ -30,8 +30,17 @@ def get_file_size_kb(filepath):
 
 def optimize_image(input_path, output_path, max_width=MAX_WIDTH, max_height=MAX_HEIGHT, quality=JPEG_QUALITY):
     """
-    Optimize a single image for web use
-    Returns info about the optimization
+    Optimize a single image for web use.
+
+    Args:
+        input_path: Path to original image
+        output_path: Path for optimized image
+        max_width: Maximum width in pixels
+        max_height: Maximum height in pixels
+        quality: JPEG quality (1-100)
+
+    Returns:
+        dict: Optimization results including success status, sizes, and dimensions
     """
     try:
         # Open image
@@ -106,10 +115,20 @@ def optimize_image(input_path, output_path, max_width=MAX_WIDTH, max_height=MAX_
             'resized': needs_resize
         }
 
+    except FileNotFoundError as e:
+        return {
+            'success': False,
+            'error': f"File not found: {e}"
+        }
+    except OSError as e:
+        return {
+            'success': False,
+            'error': f"OS error (disk space or permissions?): {e}"
+        }
     except Exception as e:
         return {
             'success': False,
-            'error': str(e)
+            'error': f"Unexpected error: {type(e).__name__}: {e}"
         }
 
 

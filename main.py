@@ -122,7 +122,8 @@ def check_status(script_info):
                     status['item_count'] = data['total_entries']
                 elif 'panels' in data:
                     status['item_count'] = len(data['panels'])
-        except:
+        except Exception as e:
+            # Failed to read metadata, but that's okay
             pass
 
     return status

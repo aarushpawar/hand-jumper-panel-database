@@ -47,7 +47,11 @@ class PathManager:
         for dir_name in base_dirs:
             dir_path = self.get(f'base.{dir_name}')
             if dir_path:
-                dir_path.mkdir(parents=True, exist_ok=True)
+                try:
+                    dir_path.mkdir(parents=True, exist_ok=True)
+                except OSError as e:
+                    # Log warning but don't fail - directory creation is best-effort
+                    print(f"Warning: Could not create directory {dir_path}: {e}")
 
     def get(self, key: str, create: bool = False) -> Optional[Path]:
         """

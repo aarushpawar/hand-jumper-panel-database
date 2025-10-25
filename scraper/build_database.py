@@ -27,11 +27,20 @@ DATABASE_FILE = OUTPUT_DIR / "panels_database.json"
 
 
 def load_json(filepath):
-    """Load JSON file if it exists"""
-    if filepath.exists():
+    """Load JSON file if it exists and is valid"""
+    if not filepath.exists():
+        return None
+
+    try:
         with open(filepath, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return None
+            data = json.load(f)
+            return data
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in {filepath}: {e}")
+        return None
+    except Exception as e:
+        print(f"Error reading {filepath}: {e}")
+        return None
 
 
 def create_database_schema():
@@ -104,7 +113,12 @@ def build_database():
     print("Loading panel metadata...")
     panel_data = load_json(PANEL_METADATA)
     if not panel_data:
-        print("Error: Panel metadata not found!")
+        print(f"Error: Panel metadata not found or invalid at {PANEL_METADATA}")
+        print("Please run panel extraction first (Step 3)")
+        return
+
+    if 'panels' not in panel_data or not isinstance(panel_data['panels'], list):
+        print("Error: Invalid panel metadata format - missing 'panels' array")
         return
 
     # Load wiki categories
@@ -123,9 +137,17 @@ def build_database():
         filename = Path(panel['filename']).stem  # e.g., "ep001_p001"
 
         # Parse episode, panel number from filename (no seasons)
-        parts = filename.split('_')
-        episode = int(parts[0][2:])  # Remove 'ep' prefix
-        panel_num = int(parts[1][1:])  # Remove 'p' prefix
+        try:
+            parts = filename.split('_')
+            if len(parts) < 2 or not parts[0].startswith('ep') or not parts[1].startswith('p'):
+                print(f"Warning: Skipping panel with invalid filename format: {filename}")
+                continue
+
+            episode = int(parts[0][2:])  # Remove 'ep' prefix
+            panel_num = int(parts[1][1:])  # Remove 'p' prefix
+        except (ValueError, IndexError) as e:
+            print(f"Warning: Could not parse filename '{filename}': {e}")
+            continue
 
         # Create panel entry
         panel_entry = {

@@ -18,9 +18,13 @@ import re
 sys.stdout.reconfigure(line_buffering=True)
 
 # Configuration
+# Hand Jumper series on Webtoon
 TITLE_NO = "2702"
-BASE_URL = "https://www.webtoons.com/en/thriller/hand-jumper"  # FIX: Changed from /action/ to /thriller/
+BASE_URL = "https://www.webtoons.com/en/thriller/hand-jumper"
 EPISODE_LIST_URL = f"{BASE_URL}/list?title_no={TITLE_NO}"
+
+# User agent for web requests (identifies as a standard browser)
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
 # Use absolute paths relative to script location
 SCRIPT_DIR = Path(__file__).parent.parent
@@ -36,7 +40,15 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def parse_episode_title(title):
-    """Extract season and episode number from title"""
+    """
+    Extract season and episode number from episode title.
+
+    Args:
+        title: Episode title string (e.g., "Ep. 1 - First Day")
+
+    Returns:
+        tuple: (season, episode) integers
+    """
     season = 2  # Default
     episode = 0
 
@@ -57,7 +69,12 @@ def parse_episode_title(title):
 
 
 def get_existing_episodes():
-    """Scan existing directories to find what we already have"""
+    """
+    Scan existing directories to find downloaded episodes.
+
+    Returns:
+        dict: Nested dict of {season: {episode: {path, image_count, images}}}
+    """
     existing = {}
 
     if not OUTPUT_DIR.exists():
@@ -91,7 +108,15 @@ def get_existing_episodes():
 
 
 async def get_all_episodes(client):
-    """Fetch complete list of all episodes from all pages"""
+    """
+    Fetch complete list of all episodes from Webtoon.
+
+    Args:
+        client: httpx.AsyncClient for making requests
+
+    Returns:
+        list: List of episode dicts with url, title, season, episode
+    """
     print("Fetching complete episode list...", flush=True)
     episodes = []
     seen_urls = set()  # Track URLs to avoid duplicates
@@ -180,7 +205,18 @@ async def get_all_episodes(client):
 
 
 async def download_episode_images(client, episode, existing_data, semaphore):
-    """Download images for one episode, skipping existing ones"""
+    """
+    Download images for one episode, with resume capability.
+
+    Args:
+        client: httpx.AsyncClient for downloads
+        episode: Episode dict with url, title, season, episode
+        existing_data: Dict of already downloaded episodes
+        semaphore: asyncio.Semaphore for rate limiting
+
+    Returns:
+        dict: Download result with status and counts
+    """
     async with semaphore:
         season = episode['season']
         ep_num = episode['episode']
@@ -246,12 +282,12 @@ async def download_episode_images(client, episode, existing_data, semaphore):
                 if img_path.exists():
                     continue
 
-                # Download
+                # Download with retries
                 for attempt in range(MAX_RETRIES):
                     try:
                         headers = {
                             'Referer': 'https://www.webtoons.com/',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            'User-Agent': USER_AGENT
                         }
                         img_response = await client.get(img_url, headers=headers, timeout=30.0)
                         img_response.raise_for_status()
@@ -339,12 +375,20 @@ async def main():
         metadata = {
             'total_episodes': len(results),
             'download_date': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'episodes': results
+            'episodes': results,
+            'config': {
+                'concurrent_episodes': CONCURRENT_EPISODES,
+                'delay_between_requests': DELAY_BETWEEN_REQUESTS,
+                'max_retries': MAX_RETRIES
+            }
         }
 
         METADATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(METADATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(metadata, f, indent=2, ensure_ascii=False)
+        try:
+            with open(METADATA_FILE, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, indent=2, ensure_ascii=False)
+        except OSError as e:
+            print(f"[WARNING] Could not save metadata to {METADATA_FILE}: {e}", flush=True)
 
         # Summary
         new_downloads = sum(1 for r in results if r.get('status') != 'already_complete')

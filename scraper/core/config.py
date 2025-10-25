@@ -51,8 +51,13 @@ class Config:
                 f"Configuration file not found: {self.config_file}"
             )
 
-        with open(self.config_file, 'r', encoding='utf-8') as f:
-            self._data = yaml.safe_load(f) or {}
+        try:
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                self._data = yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            raise ValueError(
+                f"Invalid YAML in configuration file {self.config_file}: {e}"
+            )
 
     def get(self, key: str, default: Any = None) -> Any:
         """
