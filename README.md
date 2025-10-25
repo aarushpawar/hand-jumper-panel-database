@@ -3,7 +3,7 @@
 A searchable, browsable database of all panels from the **Hand Jumper** webtoon by SLEEPACROSS. Features comprehensive tagging by character, location, and lore details, designed for easy deployment as a static website.
 
 ![License](https://img.shields.io/badge/license-Educational%20Use-blue)
-![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![JavaScript](https://img.shields.io/badge/javascript-vanilla-yellow)
 
 ## ✨ Features
@@ -63,7 +63,7 @@ webtoon-database/
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.9 or higher (Python 3.8 reached EOL in October 2024)
 - pip (Python package manager)
 - Git
 - A modern web browser
