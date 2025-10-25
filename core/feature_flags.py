@@ -29,11 +29,24 @@ class FeatureFlags:
     def _load(self) -> None:
         """Load feature flags from config file."""
         if self.config_path.exists():
-            with open(self.config_path, 'r') as f:
-                self.flags = json.load(f)
+            try:
+                with open(self.config_path, 'r') as f:
+                    self.flags = json.load(f)
+            except json.JSONDecodeError as e:
+                print(f"Warning: Invalid JSON in {self.config_path}: {e}")
+                print("Using default feature flags")
+                self.flags = self._get_defaults()
+            except Exception as e:
+                print(f"Warning: Failed to load {self.config_path}: {e}")
+                self.flags = self._get_defaults()
         else:
             # Default flags
-            self.flags = {
+            self.flags = self._get_defaults()
+            self._save()
+
+    def _get_defaults(self) -> Dict[str, Dict[str, Any]]:
+        """Get default feature flags."""
+        return {
                 'face_recognition': {
                     'state': 'enabled',
                     'priority': 100,
@@ -73,7 +86,6 @@ class FeatureFlags:
                     'config': {'cache_size': 1000}
                 }
             }
-            self._save()
 
     def _save(self) -> None:
         """Save feature flags to config file."""

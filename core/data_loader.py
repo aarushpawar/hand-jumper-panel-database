@@ -18,8 +18,13 @@ from .models import (
 
 def load_existing_database(path: str) -> Database:
     """Load existing panel database and convert to new format."""
-    with open(path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in database file {path}: {e}")
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Database file not found: {path}")
 
     # Group panels by episode
     panels_by_episode: Dict[int, List[Dict]] = {}
@@ -33,11 +38,13 @@ def load_existing_database(path: str) -> Database:
     episodes = []
     for ep_num in sorted(panels_by_episode.keys()):
         panels = []
-        for panel_data in panels_by_episode[ep_num]:
+        ep_panels_data = panels_by_episode[ep_num]
+        for panel_data in ep_panels_data:
             panel = _convert_panel(panel_data)
             panels.append(panel)
 
-        season = panel_data.get('season', 2) if panels_by_episode[ep_num] else 2
+        # Get season from first panel in episode
+        season = ep_panels_data[0].get('season', 2) if ep_panels_data else 2
         episode = Episode(
             id=f"s{season}_ep{ep_num:03d}",
             number=ep_num,

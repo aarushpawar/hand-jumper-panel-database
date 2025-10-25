@@ -238,7 +238,9 @@ class Pipeline:
         filename = path_obj.name
         episode = path_obj.parent.name
 
-        alt_path = Path(f"/home/user/PanelDatabase/frontend/images/s2/{episode}/{filename}")
+        # Use relative path from project root
+        project_root = Path(__file__).parent.parent
+        alt_path = project_root / "frontend" / "images" / "s2" / episode / filename
         if alt_path.exists():
             return str(alt_path)
 

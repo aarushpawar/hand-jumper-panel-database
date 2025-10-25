@@ -28,6 +28,7 @@ class TagCategory(Enum):
     SCENE = "scene"
     VISUAL = "visual"
     CUSTOM = "custom"
+    OTHER = "other"  # Generic/uncategorized tags
 
 
 @dataclass
@@ -324,8 +325,13 @@ class Database:
     @classmethod
     def load(cls, path: str) -> 'Database':
         """Load database from JSON file."""
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in file {path}: {e}")
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Database file not found: {path}")
 
         # Reconstruct database (simplified - in production, use proper deserialization)
         db = cls(

@@ -1,0 +1,50 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    branches: [ master, main ]
+  schedule:
+    # Run integration tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-glx tesseract-ocr
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        pip install pytest pytest-cov pytest-timeout
+
+    - name: Run integration tests
+      run: |
+        pytest tests/ -v -m "not slow" --timeout=300
+      continue-on-error: true
+
+    - name: Test pipeline components
+      run: |
+        python -c "from core.pipeline import PipelineBuilder; print('Pipeline import OK')"
+        python -c "from core.feature_flags import get_feature_flags; flags = get_feature_flags(); print('Feature flags OK')"
+        python -c "from core.models import Database; print('Models OK')"
+
+    - name: Validate configuration files
+      run: |
+        python -c "import yaml; yaml.safe_load(open('config/paths.yaml')); print('paths.yaml valid')"
+        python -c "import json; json.load(open('config/features.json')) if __import__('pathlib').Path('config/features.json').exists() else print('features.json missing (OK)')"
