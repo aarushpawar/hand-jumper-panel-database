@@ -1,0 +1,70 @@
+# Panel Splitting Configuration
+# Multi-signal content-aware panel detection
+
+# Detection sensitivity
+# Options: low (conservative), medium (balanced), high (aggressive)
+detection_sensitivity: medium
+
+# Panel size constraints
+panel:
+  min_height: 200        # Minimum panel height in pixels
+  max_height: 4000       # Maximum panel height before forced split
+  min_gap_size: 30       # Minimum gap between panels to consider
+
+# Detection signals and their weights (must sum to 1.0)
+signals:
+  whitespace:
+    enabled: true
+    weight: 0.4          # Traditional white gap detection
+    threshold: 0.90      # % of row that must be white (0.0-1.0)
+    brightness: 245      # Brightness value considered "white" (0-255)
+
+  border_lines:
+    enabled: true
+    weight: 0.3          # Horizontal line separators
+    min_length: 0.95     # % of image width for valid border (0.0-1.0)
+    thickness: 1-10      # Line thickness range in pixels
+
+  content_breaks:
+    enabled: true
+    weight: 0.2          # Sudden drops in content density
+    threshold: 0.70      # % decrease to trigger (0.0-1.0)
+    window_size: 50      # Pixels to analyze above/below
+
+  color_shifts:
+    enabled: true
+    weight: 0.1          # Major palette changes
+    threshold: 0.60      # Color similarity threshold (0.0-1.0)
+    window_size: 200     # Pixels to compare
+
+# Boundary validation rules
+validation:
+  text_buffer: 100       # Reject if text within ±N pixels of boundary
+  edge_crossing: true    # Reject if strong edges cross boundary
+  min_confidence: 0.50   # Minimum confidence to accept boundary (0.0-1.0)
+
+# Adaptive overlap settings
+overlap:
+  min: 20                # Minimum overlap in pixels
+  max: 150               # Maximum overlap in pixels
+  adaptive: true         # Adjust based on confidence
+
+  # Confidence-based overlap mapping
+  high_confidence: 25    # Use this for confidence > 0.8
+  medium_confidence: 50  # Use this for confidence 0.5-0.8
+  low_confidence: 100    # Use this for confidence < 0.5
+
+# Quality checks
+quality:
+  auto_fix: true         # Automatically fix minor issues
+  flag_threshold: 0.3    # Flag panels with confidence below this
+  merge_tiny: 150        # Auto-merge panels shorter than this
+  force_split_at: 4000   # Force split panels taller than this
+
+# Processing options
+processing:
+  downscale_width: 400   # Downscale to this width for analysis (speed)
+  edge_detection:
+    canny_low: 30        # Canny edge detection lower threshold
+    canny_high: 100      # Canny edge detection upper threshold
+  parallel: false        # Enable parallel processing (future)
